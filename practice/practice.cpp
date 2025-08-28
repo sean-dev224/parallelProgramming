@@ -1,20 +1,39 @@
 #include <iostream>
+#include <string>
 #include <vector>
 #include <list>
 
+class Person {
+    private:
+    std::string name;
+    int age;
+    void (*say_a_thing)();
+    
+
+    public:
+    Person(std::string n, int a, void (*fptr)()) {
+        name = n;
+        age = a;
+        say_a_thing = fptr;
+    }
+
+    std::string print_info() const {
+        say_a_thing();
+        return name + " " + std::to_string(age);
+    }
+
+
+
+};
+
+void say_hello() {
+    std::cout<<"Hello!\n";
+}
+
 int main() {
 
-    int i = 0;
+    Person p("Jeff", 32, say_hello);
 
-    std::cout<<i<<"\n";
+    std::cout << p.print_info() << std::endl;
 
-    while (i < 15) {
-        std::cout<<"i: "<<i++<<"\n";
-    }
-
-    std::vector<int> v = {1, 2, 3};
-
-    for(int i = 0; i < v.size(); i++){
-        std::cout<<"vector value " <<i<<": "<<v[i]<<"\n";
-    }
 }

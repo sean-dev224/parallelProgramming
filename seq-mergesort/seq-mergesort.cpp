@@ -27,13 +27,35 @@ void divide_vector(std::vector<int>& vect, std::vector<int>& half1, std::vector<
 }
 
 std::vector<int> merge_vectors(std::vector<int>& half1, std::vector<int>& half2) {
+    int half1_index, half2_index = 0;
     std::vector<int> result(half1.size() + half2.size());
 
-    while(!half1.empty() && !half2.empty()) {
-        if(half1.empty()) {
-            result.push_back()
+    while(half1_index < half1.size() || half2_index < half2.size()) {
+        //case for when one array is fully merged
+        if(half1_index >= half1.size()) {
+            result.push_back(half2[half2_index]);
+            half2_index++;
+            continue;
+        }
+        if(half2_index >= half2.size() ) {
+            result.push_back(half1[half1_index]);
+            half1_index++;
+            continue;
+        }
+
+        //when both arrays still have elements
+        if(half1[half1_index] < half2[half2_index]) {
+            result.push_back(half1[half1_index]);
+            half1_index++;
+            continue;
+        } else {
+            result.push_back(half2[half2_index]);
+            half2_index++;
+            continue;
         }
     }
+
+    return result;
 }
 
 std::vector<int> merge_sort(std::vector<int> vect) {
@@ -58,18 +80,23 @@ std::vector<int> merge_sort(std::vector<int> vect) {
 }
 
 int main(int argc, char* argv[]) {
-    std::vector<int> result;
+    std::vector<int> data;
 
-    generate_data(result, 0);
-    print_vector(result);
+    // generate_data(data, 1);
 
-    std::vector<int> half1;
-    std::vector<int> half2;
+    // std::cout<<"Starting vector: ";
+    // print_vector(data);
 
-    divide_vector(result, half1, half2);
+    // data = merge_sort(data);
 
-    print_vector(half1);
-    print_vector(half2);
+    // std::cout<<"Final vector: ";
+    // print_vector(data);
+
+
+    std::vector<int> part1 = {1, 3, 5};
+    std::vector<int> part2 = {2, 8, 9};
+
+    print_vector(merge_vectors(part1, part2));
 
     return 0;
 }

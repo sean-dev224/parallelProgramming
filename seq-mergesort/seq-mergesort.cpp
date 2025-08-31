@@ -64,7 +64,7 @@ std::vector<int> merge_sort(std::vector<int> vect) {
     int n = vect.size();
 
     //trigger end of recursive divide
-    if(n == 1) {
+    if(n <= 1) {
         return vect;
     }
 

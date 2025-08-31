@@ -1,10 +1,12 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cmath>
 #include <string>
+#include <chrono>
 
-void generate_data(std::vector<int>& result, int exponent_size) {
-    for(int i = 0; i < pow(10, exponent_size); i++) {
+void generate_data(std::vector<int>& result, int n_magnitude) {
+    for(int i = 0; i < pow(10, n_magnitude); i++) {
         result.push_back(rand());
     }
 }
@@ -27,8 +29,8 @@ void divide_vector(std::vector<int>& vect, std::vector<int>& half1, std::vector<
 }
 
 std::vector<int> merge_vectors(std::vector<int>& half1, std::vector<int>& half2) {
-    int half1_index, half2_index = 0;
-    std::vector<int> result(half1.size() + half2.size());
+    int half1_index = 0, half2_index = 0;
+    std::vector<int> result;
 
     while(half1_index < half1.size() || half2_index < half2.size()) {
         //case for when one array is fully merged
@@ -79,24 +81,35 @@ std::vector<int> merge_sort(std::vector<int> vect) {
     return merge_vectors(half1, half2);
 }
 
-int main(int argc, char* argv[]) {
+double test_merge(int n_magnitude) {
+    namespace chrn = std::chrono;
+
     std::vector<int> data;
+    generate_data(data, n_magnitude);
 
-    // generate_data(data, 1);
-
-    // std::cout<<"Starting vector: ";
-    // print_vector(data);
-
-    // data = merge_sort(data);
-
-    // std::cout<<"Final vector: ";
-    // print_vector(data);
+    auto start = chrn::high_resolution_clock::now();
+    data = merge_sort(data);
+    auto end = chrn::high_resolution_clock::now();
+    auto elapsed_us = chrn::duration_cast<chrn::microseconds>(end - start).count();
+    double elapsed_ms = elapsed_us / 1000.0;
 
 
-    std::vector<int> part1 = {1, 3, 5};
-    std::vector<int> part2 = {2, 8, 9};
+    return elapsed_ms;
+}
 
-    print_vector(merge_vectors(part1, part2));
+int main(int argc, char* argv[]) {
+    std::ofstream csvFile("execution_times.csv");
+    csvFile<<"n_magnitude,execution_time_ms\n";
+    
+    for(int i = 1; i <= 9; i++) {
+        double elapsed_ms = test_merge(i);
+
+        std::cout<<"n = 10^" << i << ", execution time: " << elapsed_ms <<" ms\n";
+        csvFile<<i<<","<<elapsed_ms<<"\n";
+
+    }
+
+    csvFile.close();
 
     return 0;
 }

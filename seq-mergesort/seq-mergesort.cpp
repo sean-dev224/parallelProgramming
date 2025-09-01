@@ -7,7 +7,7 @@
 
 void generate_data(std::vector<int>& result, int n_magnitude) {
     for(int i = 0; i < pow(10, n_magnitude); i++) {
-        result.push_back(rand());
+        result.push_back(rand() % 100);
     }
 }
 
@@ -18,67 +18,72 @@ void print_vector(const std::vector<int>& vector_to_print) {
     std::cout << "\n";
 }
 
-void divide_vector(std::vector<int>& vect, std::vector<int>& half1, std::vector<int>& half2) {
-    for(int i = 0; i < vect.size() / 2; i++) {
-        half1.push_back(vect[i]);
+void verify_sorted(const std::vector<int>& arr) {
+    for(int i = 1; i < arr.size(); i++) {
+        if(arr[i-1] > arr[i]) {
+            std::cout<<"NOT SORTED\n";
+            return;
+        }
     }
-
-    for(int i = vect.size() / 2; i < vect.size(); i++) {
-        half2.push_back(vect[i]);
-    }
+    std::cout<<"Sorted successfully\n";
 }
 
-std::vector<int> merge_vectors(std::vector<int>& half1, std::vector<int>& half2) {
-    int half1_index = 0, half2_index = 0;
-    std::vector<int> result;
+void merge_vectors_inplace(std::vector<int>& arr, int left, int mid, int right) {
+    //half1 is from [left, mid], half2 is from [mid+1, right]
+    int half1_n = mid - left + 1;
+    int half2_n = right - mid;
 
-    while(half1_index < half1.size() || half2_index < half2.size()) {
-        //case for when one array is fully merged
-        if(half1_index >= half1.size()) {
-            result.push_back(half2[half2_index]);
-            half2_index++;
-            continue;
-        }
-        if(half2_index >= half2.size() ) {
-            result.push_back(half1[half1_index]);
-            half1_index++;
-            continue;
-        }
+    //copy values to temporary vectors
+    std::vector<int> half1;
+    half1.reserve(half1_n);
+    for(int i = left; i <= mid; i++) {
+        half1.push_back(arr[i]);
+    }
 
-        //when both arrays still have elements
-        if(half1[half1_index] < half2[half2_index]) {
-            result.push_back(half1[half1_index]);
-            half1_index++;
-            continue;
+    std::vector<int> half2;
+    half2.reserve(half2_n);
+    for(int i = mid+1; i <= right; i++) {
+        half2.push_back(arr[i]);
+    }
+
+    //merge temp vectors back to original vector
+    int half1_i = 0; int half2_i = 0; int arr_i = left;
+
+    while(half1_i < half1.size() && half2_i < half2.size()) {
+        if(half1[half1_i] <= half2[half2_i]) {
+            arr[arr_i] = half1[half1_i];
+            half1_i++;
+            arr_i++;
         } else {
-            result.push_back(half2[half2_index]);
-            half2_index++;
-            continue;
+            arr[arr_i] = half2[half2_i];
+            half2_i++;
+            arr_i++;
         }
     }
-
-    return result;
+    //add remaining elements once one array has been traversed
+    while(half1_i < half1.size()) {
+        arr[arr_i] = half1[half1_i];
+            half1_i++;
+            arr_i++;
+    }
+    while(half2_i < half2.size()) {
+        arr[arr_i] = half2[half2_i];
+            half2_i++;
+            arr_i++;
+    }
 }
 
-std::vector<int> merge_sort(std::vector<int> vect) {
-    int n = vect.size();
+void merge_sort(std::vector<int>& arr, int left, int right) {
 
     //trigger end of recursive divide
-    if(n <= 1) {
-        return vect;
+    if(left >= right) {
+        return;
     }
 
-    //divide vector and recurse
-    std::vector<int> half1;
-    std::vector<int> half2;
-
-    divide_vector(vect, half1, half2);
-
-    half1 = merge_sort(half1);
-    half2 = merge_sort(half2);
-
-    //merge sorted halves back together
-    return merge_vectors(half1, half2);
+    int mid = left + (right - left) / 2;
+    merge_sort(arr, left, mid);
+    merge_sort(arr, mid+1, right);
+    merge_vectors_inplace(arr, left, mid, right);
 }
 
 double test_merge(int n_magnitude) {
@@ -88,11 +93,13 @@ double test_merge(int n_magnitude) {
     generate_data(data, n_magnitude);
 
     auto start = chrn::high_resolution_clock::now();
-    data = merge_sort(data);
+    merge_sort(data, 0, data.size()-1);
     auto end = chrn::high_resolution_clock::now();
     auto elapsed_us = chrn::duration_cast<chrn::microseconds>(end - start).count();
     double elapsed_ms = elapsed_us / 1000.0;
 
+    //print_vector(data);
+    //verify_sorted(data);
 
     return elapsed_ms;
 }

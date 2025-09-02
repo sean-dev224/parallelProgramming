@@ -1,0 +1,8 @@
+To benchmark on Centaurus
+1. Pull Git repository
+2. run "make" in the "seq-mergesort" directory to compile the code
+3. run "sbatch batch_script.sh" to run the code through slurm. The main function will run merge sort on vector sizes ranging from 10 to 10^8, and record the times in execution_times.csv
+note: creating a vector of 10^9 ints caused an out-of-memory error on Centaurus, so I ran it up to 10^8
+4. on a development machine, run plotter.py with the path to the .csv file as a command line argument. This will plot the graph
+
+The times for this test make perfect sense to me. You can see that the plot forms a straight line, meaning that the execution time scales linearly with the number of elements

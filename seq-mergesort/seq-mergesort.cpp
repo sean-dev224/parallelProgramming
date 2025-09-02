@@ -7,7 +7,7 @@
 
 void generate_data(std::vector<int>& result, int n_magnitude) {
     for(int i = 0; i < pow(10, n_magnitude); i++) {
-        result.push_back(rand() % 100);
+        result.push_back(rand());
     }
 }
 
@@ -97,10 +97,10 @@ double test_merge(int n_magnitude) {
     auto end = chrn::high_resolution_clock::now();
     auto elapsed_us = chrn::duration_cast<chrn::microseconds>(end - start).count();
     double elapsed_ms = elapsed_us / 1000.0;
-
-    //print_vector(data);
-    //verify_sorted(data);
-
+    
+    // print_vector(data);
+    // verify_sorted(data);
+    
     return elapsed_ms;
 }
 
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     std::ofstream csvFile("execution_times.csv");
     csvFile<<"n_magnitude,execution_time_ms\n";
     
-    for(int i = 1; i <= 9; i++) {
+    for(int i = 1; i <= 8; i++) {
         double elapsed_ms = test_merge(i);
 
         std::cout<<"n = 10^" << i << ", execution time: " << elapsed_ms <<" ms\n";

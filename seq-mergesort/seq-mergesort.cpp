@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     std::ofstream csvFile("execution_times.csv");
     csvFile<<"n_magnitude,execution_time_ms\n";
     
-    for(int i = 1; i <= 8; i++) {
+    for(int i = 1; i <= 9; i++) {
         double elapsed_ms = test_merge(i);
 
         std::cout<<"n = 10^" << i << ", execution time: " << elapsed_ms <<" ms\n";

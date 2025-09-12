@@ -1,0 +1,15 @@
+To benchmark on Centaurus
+1. Pull Git repository
+2. run "make" in the "seq-nbody" directory to compile the code
+3. run "sbatch batch_script.sh" to run the code through slurm. Use the following rules for command line arguments
+
+    Arg 1: either an integer representing the number of particles (for a random initialization), or a path to an initial state (such as solar.tsv)
+    Arg 2: (string) filepath to an output tsv file. The program will create it if it doesn't exist, or overwrite if it does
+    Arg 3: (double) delta T for each step of the simulation
+    Arg 4: (int) number of timesteps for the simulation
+    Arg 5: (int) how frequently to write the state. The simulation will write every n timesteps
+
+    For example: sbatch batch_script.sh solar.tsv output2.tsv 10000 1000 10
+
+4. The execution time will be written to the console. cat the slurm output to see it
+5. on a development machine, run plot.py with the path to the output tsv file as a command line argument. This will visualize the simulation

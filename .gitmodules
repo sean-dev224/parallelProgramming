@@ -1,0 +1,3 @@
+[submodule "seq-graphcrawler/rapidjson"]
+	path = seq-graphcrawler/rapidjson
+	url = https://github.com/Tencent/rapidjson.git

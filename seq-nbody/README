@@ -13,3 +13,9 @@ To benchmark on Centaurus
 
 4. The execution time will be written to the console. cat the slurm output to see it
 5. on a development machine, run plot.py with the path to the output tsv file as a command line argument. This will visualize the simulation
+
+
+Simulation Execution Times
+Solar system with dt=200, steps=5000000: 1.05232e+06ms
+100 partcles with dt=1 steps=10000: 186921ms
+1000 particles with dt=1 and steps=10000: 1.83846e+07ms

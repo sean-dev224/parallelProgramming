@@ -1,0 +1,19 @@
+To benchmark on Centaurus
+1. Pull Git repository
+2. run "make" in the "seq-graphcrawler" directory to compile the code
+3. run "sbatch batch_script.sh" to run the code through slurm. Use the following rules for command line arguments
+
+    Use the following arguments to run on command line:
+    Arg 1: (string) Name of initial node. If the name contains spaces, you will need to use quotation marks
+    Arg 2: (int) Maximum depth of search
+    Arg 3: (string) Filepath of output (use .txt)
+
+    For example: sbatch batch_script.sh "Tom Hanks" 2 TomHanks_depth=2.txt
+
+4. The execution time and graph contents will be store in the generated .txt file
+
+
+Simulation Execution Times
+Solar system with dt=200, steps=5000000: 1.05232e+06ms
+100 partcles with dt=1 steps=10000: 186921ms
+1000 particles with dt=1 and steps=10000: 1.83846e+07ms

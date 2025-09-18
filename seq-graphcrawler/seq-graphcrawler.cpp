@@ -11,13 +11,13 @@
 
 const std::string ENDPOINT = "http://hollywood-graph-crawler.bridgesuncc.org/neighbors/";
 
-void replace_spaces(std::string& s, std::string replacement) {
-    for(size_t i = 0; i < s.length(); ++i) {
-        if(s[i] == ' ') {
-            s.replace(i, 1, replacement);
-        }
-    }
-}
+// void replace_spaces(std::string& s, std::string replacement) {
+//     for(size_t i = 0; i < s.length(); ++i) {
+//         if(s[i] == ' ') {
+//             s.replace(i, 1, replacement);
+//         }
+//     }
+// }
 
 size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
     //cast the void pointer from the function to a std::string pointer
@@ -31,19 +31,24 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
     return nmemb;
 }
 
-std::string run_curl(std::string target_url) {
-    CURL *curl;
+std::string run_curl(CURL* curl, std::string target_url) {
+    // CURL *curl;
     CURLcode res;
 
     std::string myoutstring;
 
     //remove spaces from the URL
-    replace_spaces(target_url, "%20");
+    // replace_spaces(target_url, "%20");
 
-    curl = curl_easy_init();
+    // curl = curl_easy_init();
     if(curl) {
+        const char* target_c_url = target_url.c_str();
+        char *output = curl_easy_escape(curl, target_c_url, target_url.length());
+
         //set URL for the handle
-        curl_easy_setopt(curl, CURLOPT_URL, target_url.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, output);
+
+        curl_free(output);
 
         //tell curl where to write data
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &myoutstring);
@@ -60,8 +65,7 @@ std::string run_curl(std::string target_url) {
             return "";
         }
 
-        //cleanup
-        curl_easy_cleanup(curl);
+        
     } else {
         std::cerr<<"Error in creating curl handler\n";
         return "";
@@ -101,10 +105,12 @@ class Node {
     Node* parent;
     std::vector<Node> children;
     int depth;
+    CURL* curl;
 
-    Node(std::string value, int depth) {
+    Node(std::string value, int depth, CURL* curl_pointer) {
         this->value = value;
         this->depth = depth;
+        this->curl = curl_pointer;
         parent = NULL;
     }
 
@@ -118,7 +124,7 @@ class Node {
 
     void create_child(std::string val) {
         //std::cout<<"Node "<<value<<" creating child "<<val<<", depth = "<<(this->depth+1)<<"\n";
-        Node child = Node(val, this->depth + 1);
+        Node child = Node(val, this->depth + 1, this->curl);
         child.parent = this;
         this->children.push_back(child);
     }
@@ -126,7 +132,7 @@ class Node {
     void create_children_from_db(const int& max_depth) {
         if(this->depth >= max_depth) return;
 
-        std::string json_result = run_curl(ENDPOINT + value);
+        std::string json_result = run_curl(this->curl, ENDPOINT + value);
         std::vector<std::string> neighbors = parse_neighbors(json_result);
 
         //create children for this node
@@ -177,7 +183,9 @@ int main(int argc, char* argv[]) {
     int max_depth = std::stoi(argv[2]);
     std::string output_filepath = argv[3];
 
-    Node parent = Node(parent_value, 0);
+    CURL* curl = curl_easy_init();
+
+    Node parent = Node(parent_value, 0, curl);
 
 
     //time execution
@@ -189,6 +197,9 @@ int main(int argc, char* argv[]) {
     auto end = chrn::high_resolution_clock::now();
     auto elapsed_us = chrn::duration_cast<chrn::microseconds>(end - start).count();
     double elapsed_ms = elapsed_us / 1000.0;
+
+    //cleanup
+    curl_easy_cleanup(curl);
 
 
     //write output

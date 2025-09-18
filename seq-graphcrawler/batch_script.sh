@@ -3,4 +3,4 @@
 #SBATCH --partition=Centaurus
 #SBATCH --time=00:10:00
 #SBATCH --mem=10G
-$HOME/parallelProgramming/seq-nbody/nbody.out $1 $2 $3 
+$HOME/parallelProgramming/seq-graphcrawler/seq-graphcrawler.out "$1" $2 $3

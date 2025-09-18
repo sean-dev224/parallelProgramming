@@ -1,4 +1,4 @@
-CXXFLAGS=-I ./rapidjson/include
+CXXFLAGS=-g -I ./rapidjson/include
 LDFLAGS=-lcurl
 LD=g++
 

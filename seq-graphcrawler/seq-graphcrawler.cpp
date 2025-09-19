@@ -2,6 +2,7 @@
 #include "rapidjson/document.h"
 
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -31,7 +32,7 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
     return nmemb;
 }
 
-std::string run_curl(CURL* curl, std::string target_url) {
+std::string run_curl(CURL* curl, std::string value) {
     // CURL *curl;
     CURLcode res;
 
@@ -42,11 +43,13 @@ std::string run_curl(CURL* curl, std::string target_url) {
 
     // curl = curl_easy_init();
     if(curl) {
-        const char* target_c_url = target_url.c_str();
-        char *output = curl_easy_escape(curl, target_c_url, target_url.length());
+        char *output = curl_easy_escape(curl, value.c_str(), value.length());
+
+        std::string url = ENDPOINT + output;
+        //std::cout<<url<<"\n";
 
         //set URL for the handle
-        curl_easy_setopt(curl, CURLOPT_URL, output);
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 
         curl_free(output);
 
@@ -61,7 +64,7 @@ std::string run_curl(CURL* curl, std::string target_url) {
 
         //handle errors
         if(res != CURLE_OK) {
-            std::cerr<<"Curl encountered an error. Ending process\n" << curl_easy_strerror(res);
+            std::cerr<<"Curl encountered an error. Ending process\n" << curl_easy_strerror(res) << "\n";
             return "";
         }
 
@@ -80,11 +83,15 @@ std::vector<std::string> parse_neighbors(std::string const &json_string) {
     //convert our c++ string to a c string to pass to rapidjson
     document.Parse(json_string.c_str());
 
+    if(document.HasParseError()) {
+        throw std::runtime_error("JSON parse error: " + std::string(json_string));
+    }
+
     if(document.HasMember("error")) {
         throw std::runtime_error(document["error"].GetString());
     }
 
-    assert(document.IsObject());
+    //assert(document.IsObject());
     assert(document.HasMember("neighbors"));
     assert(document["neighbors"].IsArray());
 
@@ -132,7 +139,10 @@ class Node {
     void create_children_from_db(const int& max_depth) {
         if(this->depth >= max_depth) return;
 
-        std::string json_result = run_curl(this->curl, ENDPOINT + value);
+        std::string json_result = run_curl(this->curl, value);
+        if(json_result.empty()) {
+            return;
+        }
         std::vector<std::string> neighbors = parse_neighbors(json_result);
 
         //create children for this node

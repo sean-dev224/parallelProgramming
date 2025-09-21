@@ -1,0 +1,18 @@
+To benchmark on Centaurus
+1. Pull Git repository
+2. run "make" in the "par-graphcrawler" directory to compile the code
+3. run "sbatch par_batch_script.sh" to run the code through slurm. Use the following rules for command line arguments
+
+    Use the following arguments to run on command line:
+    Arg 1: (string) Name of initial node. If the name contains spaces, you will need to use quotation marks
+    Arg 2: (int) Maximum depth of search
+    Arg 3: (int) Number of threads to run with
+
+    For example: sbatch par_batch_script.sh "Tom Hanks" 2 8
+    Use seq_batch_script.sh to run in sequential, omitting the thread count argument
+
+4. The execution time will be printed to the console. cat the slurm file to view
+
+
+Execution Times:
+

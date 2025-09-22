@@ -16,3 +16,16 @@ To benchmark on Centaurus
 
 Execution Times:
 
+Tom Hanks, depth = 3
+Sequential: 82.1195s
+8 threads: 10.5533s
+16 threads: 5.46268s
+
+Bryan Cranston, depth = 2
+Sequential: 3.21672s
+8 threads: 0.65842s
+16 threads: 0.484798s
+
+
+
+

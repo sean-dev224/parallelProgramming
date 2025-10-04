@@ -3,6 +3,7 @@
 #include <mutex>
 #include <string>
 #include <queue>
+#include <condition_variable>
 #include <unordered_set>
 #include <cstdio>
 #include <cstdlib>
@@ -29,6 +30,74 @@ bool debug = true;
 
 // Updated service URL
 const std::string SERVICE_URL = "http://hollywood-graph-crawler.bridgesuncc.org/neighbors/";
+
+template <typename T>
+class BlockingQueue {
+    std::queue<T> q;
+    std::mutex mut;
+    std::condition_variable queue_not_empty;
+    bool processing_complete = false;
+
+    public:
+    
+
+    BlockingQueue() {
+    }
+
+    void push(const T& element) {
+        std::unique_lock<std::mutex> lg(mut);
+        q.push(element);
+        queue_not_empty.notify_one();
+    }
+
+    bool pop(T& t) {
+        std::unique_lock<std::mutex> lg(mut);
+        
+        //thread can be woken up spuriously, so the functor checks whether it should actually be awake every time it tries
+        queue_not_empty.wait(lg, [this]{ return !q.empty() || this->processing_complete; });
+
+        if(processing_complete) return false;
+
+        t = q.front();
+        q.pop();
+        return true;
+    }
+
+    void finish() {
+        std::unique_lock<std::mutex> lg(mut);
+        processing_complete = true;
+        queue_not_empty.notify_all();
+
+    }
+};
+
+class Node {
+    public:
+    std::string value;
+    int depth;
+
+    Node() {}
+
+    Node(std::string value, int depth) {
+        this->value = value;
+        this-> depth = depth;
+    }
+
+    bool operator== (const Node& node2) const {
+        return value == node2.value;
+    }
+};
+
+//the unordered set requires a hash function to be defined for an object to be used in it
+namespace std {
+    template <>
+    struct hash<Node> {
+        std::size_t operator()(const Node& n) const noexcept {
+            // use the existing string hasher
+            return std::hash<std::string>()(n.value);
+        }
+    };
+}
 
 // Function to HTTP ecnode parts of URLs. for instance, replace spaces with '%20' for URLs
 std::string url_encode(CURL* curl, std::string input) {
@@ -102,91 +171,71 @@ std::vector<std::string> get_neighbors(const std::string& json_str) {
 }
 
 
-void expand_nodes(CURL* curl, std::pair<int, int>& indices, std::vector<std::string>& current_level, std::vector<std::string>& next_level, std::unordered_set<std::string>& visited, std::mutex& mut) {
+
+void expand_nodes(CURL* curl, BlockingQueue<Node>& q, std::unordered_set<Node>& visited, std::mutex& visited_mutex, const int& max_depth) {
     auto id = std::this_thread::get_id();
-    for(int i = indices.first; i <= indices.second; i++) {
+
+    while(true) {
+        Node to_expand;
+
+        if(!q.pop(to_expand))
+            break;
+
+        if(to_expand.depth >= max_depth)
+            continue;
+
+
         try {
             if (debug)
-                std::cout<<"Thread "<< id << " Trying to expand "<<current_level[i]<<"\n";
+                std::cout<<"Thread "<< id << " Trying to expand "<<to_expand.value<<"\n";
 
             //for each new neighbor
-            for (const auto& neighbor : get_neighbors(fetch_neighbors(curl, current_level[i]))) {
+            std::lock_guard<std::mutex> lg(visited_mutex);
+            for (const auto& neighbor : get_neighbors(fetch_neighbors(curl, to_expand.value))) {
                 if (debug)
                     std::cout<<"neighbor "<<neighbor<<"\n";
 
-                std::lock_guard<std::mutex> lg(mut);
-                if (!visited.count(neighbor)) {
-                    visited.insert(neighbor);
-                    next_level.push_back(neighbor);
+                Node neighbor_node = Node(neighbor, to_expand.depth+1);
+                if (!visited.count(neighbor_node)) {
+                    visited.insert(neighbor_node);
+                    q.push(neighbor_node);
                 }
 
             }
         } catch (const ParseException& e) {
-            std::cerr<<"Error while fetching neighbors of: "<<current_level[i]<<std::endl;
+            std::cerr<<"Error while fetching neighbors of: "<<to_expand.value<<std::endl;
             throw e;
         }
+
     }
-    
 }
-
-std::vector<std::pair<int, int>> split_list(const std::vector<std::string>& list, int n_segments) {
-    //returns a vector containing start and end indexes for n sub-lists
-
-    std::vector<std::pair<int, int>> result;
-    int total = list.size();
-    if (n_segments <= 0 || total == 0) return result;
-
-    int base_size = total / n_segments;      // minimum number of items per segment
-    int remainder = total % n_segments;      // leftover items to distribute
-
-    int start = 0;
-    for (int i = 0; i < n_segments; ++i) {
-        int seg_size = base_size + (i < remainder ? 1 : 0); // spread remainder across first segments
-        int end = start + seg_size - 1; // inclusive end index
-        if (seg_size > 0) {
-            result.emplace_back(start, end);
-        }
-        start = end + 1;
-    }
-
-    return result;
-}
-
 
 
 // BFS Traversal Function
-std::vector<std::vector<std::string>> bfs(std::vector<CURL*>& curl_handles, const std::string& start, int depth) {
-    std::vector<std::vector<std::string>> levels;
-    std::unordered_set<std::string> visited;
+std::unordered_set<Node> bfs(std::vector<CURL*>& curl_handles, const std::string& start, int depth) {
     int max_threads = curl_handles.size();
     std::vector<std::thread> threadgroup;
-    std::mutex mut;
-    
-    levels.push_back({start});
-    visited.insert(start);
+    std::unordered_set<Node> visited;
+    std::mutex visited_mutex;
+    BlockingQueue<Node> q;
 
-    for (int d = 0;  d < depth; d++) {
-        if (debug)
-            std::cout<<"starting level: "<<d<<"\n";
-        
-        levels.push_back({});
+    //add first node
+    q.push(Node(start, 0));
 
+    for (CURL* handle: curl_handles) {
+        threadgroup.push_back(std::thread(expand_nodes, handle, std::ref(q), std::ref(visited), std::ref(visited_mutex), std::ref(depth)));
+    }
 
-        std::vector<std::pair<int, int>> indices = split_list(levels[d], max_threads);
-        for(int i = 0; i < indices.size(); i++) {
-            threadgroup.push_back(std::thread(expand_nodes, curl_handles[i], std::ref(indices[i]), std::ref(levels[d]), std::ref(levels[d+1]), std::ref(visited), std::ref(mut)));
-        }
+    std::this_thread::sleep_for(std::chrono::seconds(15));
+    std::cout << "Finished waiting\n";
+    q.finish();
 
-        //recover all threads
-        for(auto& t: threadgroup) {
-            t.join();
-        }
-        threadgroup.clear();
-
-
+    //recover all threads
+    for(auto& t: threadgroup) {
+        t.join();
     }
     
-    return levels;
+    return visited;
 }
 
 int main(int argc, char* argv[]) {
@@ -224,18 +273,19 @@ int main(int argc, char* argv[]) {
 
 
 
-
+    //time execution
     const auto start{std::chrono::steady_clock::now()};
     
-    
-    for (const auto& n : bfs(curl_handles, start_node, depth)) {
-        for (const auto& node : n)
-	        std::cout << "- " << node << "\n";
-        std::cout<<n.size()<<"\n";
-    }
+    std::unordered_set<Node> nodes= bfs(curl_handles, start_node, depth);
     
     const auto finish{std::chrono::steady_clock::now()};
     const std::chrono::duration<double> elapsed_seconds{finish - start};
+
+    //print results
+    for (const auto& node : nodes) {
+	    std::cout << "- " << node.value << "\n";
+    }
+    std::cout<<nodes.size()<<"\n";
     std::cout << "Time to crawl: "<<elapsed_seconds.count() << "s\n";
     
     //cleanup all the handles

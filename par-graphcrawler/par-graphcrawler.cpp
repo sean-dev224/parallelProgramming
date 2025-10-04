@@ -102,7 +102,7 @@ std::vector<std::string> get_neighbors(const std::string& json_str) {
 }
 
 
-void expand_nodes(CURL* curl, std::pair<int, int>& indices, std::vector<std::string>& current_level, std::vector<std::string>& next_level, std::unordered_set<std::string>& visited, std::mutex& mut) {
+void non_blocking_expand_nodes(CURL* curl, std::pair<int, int>& indices, std::vector<std::string>& current_level, std::vector<std::string>& next_level, std::unordered_set<std::string>& visited, std::mutex& mut) {
     auto id = std::this_thread::get_id();
     for(int i = indices.first; i <= indices.second; i++) {
         try {
@@ -174,7 +174,7 @@ std::vector<std::vector<std::string>> bfs(std::vector<CURL*>& curl_handles, cons
 
         std::vector<std::pair<int, int>> indices = split_list(levels[d], max_threads);
         for(int i = 0; i < indices.size(); i++) {
-            threadgroup.push_back(std::thread(expand_nodes, curl_handles[i], std::ref(indices[i]), std::ref(levels[d]), std::ref(levels[d+1]), std::ref(visited), std::ref(mut)));
+            threadgroup.push_back(std::thread(non_blocking_expand_nodes, curl_handles[i], std::ref(indices[i]), std::ref(levels[d]), std::ref(levels[d+1]), std::ref(visited), std::ref(mut)));
         }
 
         //recover all threads

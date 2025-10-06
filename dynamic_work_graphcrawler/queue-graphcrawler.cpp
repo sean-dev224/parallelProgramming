@@ -1,6 +1,8 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <shared_mutex>
+#include <atomic>
 #include <string>
 #include <queue>
 #include <condition_variable>
@@ -26,7 +28,7 @@ struct ParseException : std::runtime_error, rapidjson::ParseResult {
 #include <chrono>
 
 
-bool debug = true;
+bool debug = false;
 
 // Updated service URL
 const std::string SERVICE_URL = "http://hollywood-graph-crawler.bridgesuncc.org/neighbors/";
@@ -48,6 +50,9 @@ class BlockingQueue {
         std::unique_lock<std::mutex> lg(mut);
         q.push(element);
         queue_not_empty.notify_one();
+
+        if(debug)
+            std::cout<<"Pushed, queue size now "<< q.size() <<"\n";
     }
 
     bool pop(T& t) {
@@ -60,7 +65,16 @@ class BlockingQueue {
 
         t = q.front();
         q.pop();
+
+        if(debug)
+            std::cout<<"Popped, queue size now "<< q.size() <<"\n";
+
         return true;
+    }
+
+    bool empty() {
+        std::unique_lock<std::mutex> lg(mut);
+        return q.empty();
     }
 
     void finish() {
@@ -172,7 +186,13 @@ std::vector<std::string> get_neighbors(const std::string& json_str) {
 
 
 
-void expand_nodes(CURL* curl, BlockingQueue<Node>& q, std::unordered_set<Node>& visited, std::mutex& visited_mutex, const int& max_depth) {
+void expand_nodes(CURL* curl, 
+    BlockingQueue<Node>& q, 
+    std::unordered_set<Node>& visited, 
+    std::shared_mutex& bfs_mutex, 
+    std::atomic<int>& active_threads, 
+    const int& max_depth,
+    std::condition_variable& done_condition) {
     auto id = std::this_thread::get_id();
 
     while(true) {
@@ -181,33 +201,43 @@ void expand_nodes(CURL* curl, BlockingQueue<Node>& q, std::unordered_set<Node>& 
         if(!q.pop(to_expand))
             break;
 
-        if(to_expand.depth >= max_depth)
-            continue;
-
-
+        active_threads++;
         try {
             if (debug)
-                std::cout<<"Thread "<< id << " Trying to expand "<<to_expand.value<<"\n";
+                std::cout<<"Thread "<< id << " Trying to expand "<<to_expand.value<<" with depth "<< to_expand.depth <<"\n";
 
-            //for each new neighbor
-            std::lock_guard<std::mutex> lg(visited_mutex);
+            //for each new neighbor, add to visited set and push to queue
             for (const auto& neighbor : get_neighbors(fetch_neighbors(curl, to_expand.value))) {
-                if (debug)
-                    std::cout<<"neighbor "<<neighbor<<"\n";
+                if (debug) std::cout<<"neighbor "<<neighbor<<"\n";
 
+                //create node object
                 Node neighbor_node = Node(neighbor, to_expand.depth+1);
-                if (!visited.count(neighbor_node)) {
+
+                //read-only lock
+                bfs_mutex.lock_shared();
+                bool node_visited = visited.count(neighbor_node);
+                bfs_mutex.unlock_shared();
+
+                if (!node_visited) {
+                    //write protected lock
+                    bfs_mutex.lock();
                     visited.insert(neighbor_node);
-                    q.push(neighbor_node);
+                    bfs_mutex.unlock();
+
+                    if(neighbor_node.depth < max_depth)
+                        q.push(neighbor_node);
                 }
 
             }
+            
         } catch (const ParseException& e) {
             std::cerr<<"Error while fetching neighbors of: "<<to_expand.value<<std::endl;
             throw e;
         }
-
+        active_threads--;
+        done_condition.notify_all();
     }
+ 
 }
 
 
@@ -216,19 +246,36 @@ std::unordered_set<Node> bfs(std::vector<CURL*>& curl_handles, const std::string
     int max_threads = curl_handles.size();
     std::vector<std::thread> threadgroup;
     std::unordered_set<Node> visited;
-    std::mutex visited_mutex;
+    std::shared_mutex bfs_mutex;
+    std::atomic<int> active_threads = 0;
     BlockingQueue<Node> q;
 
     //add first node
-    q.push(Node(start, 0));
+    Node first = Node(start, 0);
+    q.push(first);
+    visited.insert(first);
+
+    //wait for completion
+    std::mutex done_mutex;
+    std::condition_variable done_condition;
+    std::unique_lock<std::mutex> done_lock(done_mutex);
 
     for (CURL* handle: curl_handles) {
-        threadgroup.push_back(std::thread(expand_nodes, handle, std::ref(q), std::ref(visited), std::ref(visited_mutex), std::ref(depth)));
+        threadgroup.push_back(std::thread(expand_nodes, handle, std::ref(q), std::ref(visited), std::ref(bfs_mutex), std::ref(active_threads), std::ref(depth), std::ref(done_condition)));
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(15));
-    std::cout << "Finished waiting\n";
-    q.finish();
+    
+    done_condition.wait(done_lock, [&](){ return q.empty() && active_threads == 0; });
+
+
+
+
+    while(true){
+        if(q.empty() && active_threads == 0){ 
+            q.finish();
+            break;
+        }
+    }
 
     //recover all threads
     for(auto& t: threadgroup) {

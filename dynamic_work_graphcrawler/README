@@ -1,0 +1,31 @@
+To benchmark on Centaurus
+1. Pull Git repository
+2. run "make" in the "dynamic_work_graphcrawler" directory to compile the code
+3. run "sbatch batch_script.sh" to run the code through slurm. Use the following rules for command line arguments
+
+    Use the following arguments to run on command line:
+    Arg 1: (string) Name of initial node. If the name contains spaces, you will need to use quotation marks
+    Arg 2: (int) Maximum depth of search
+    Arg 3: (int) Number of threads to run with
+
+    For example: sbatch batch_script.sh "Tom Hanks" 2 8
+    Use 1 thread to run in sequential
+
+4. The execution time will be printed to the console. cat the slurm file to view
+
+
+Execution Times:
+
+Tom Hanks, depth = 3
+Sequential: 82.1195s
+8 threads: 10.5533s
+16 threads: 5.46268s
+
+Bryan Cranston, depth = 2
+Sequential: 3.21672s
+8 threads: 0.65842s
+16 threads: 0.484798s
+
+
+
+

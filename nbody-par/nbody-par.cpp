@@ -250,7 +250,7 @@ int main(int argc, char* argv[]) {
   //end timer
   const auto finish{std::chrono::steady_clock::now()};
   const std::chrono::duration<double> elapsed_seconds{finish - start};
-  std::cout << "Time to run: "<<elapsed_seconds.count() << "s\n";
+  std::cout << nbthreads << " Threads, Time to run: "<<elapsed_seconds.count() << "s\n";
 
 
   return 0;

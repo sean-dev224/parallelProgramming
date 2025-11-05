@@ -153,15 +153,15 @@ void update_position(simulation& s, size_t i, double dt) {
   s.z[i] += s.vz[i]*dt;
 }
 
-void dump_state(simulation& s) {
-  std::cout<<s.nbpart<<'\t';
+void dump_state(simulation& s, std::ostream& out) {
+  out<<s.nbpart<<'\t';
   for (size_t i=0; i<s.nbpart; ++i) {
-    std::cout<<s.mass[i]<<'\t';
-    std::cout<<s.x[i]<<'\t'<<s.y[i]<<'\t'<<s.z[i]<<'\t';
-    std::cout<<s.vx[i]<<'\t'<<s.vy[i]<<'\t'<<s.vz[i]<<'\t';
-    std::cout<<s.fx[i]<<'\t'<<s.fy[i]<<'\t'<<s.fz[i]<<'\t';
+    out<<s.mass[i]<<'\t';
+    out<<s.x[i]<<'\t'<<s.y[i]<<'\t'<<s.z[i]<<'\t';
+    out<<s.vx[i]<<'\t'<<s.vy[i]<<'\t'<<s.vz[i]<<'\t';
+    out<<s.fx[i]<<'\t'<<s.fy[i]<<'\t'<<s.fz[i]<<'\t';
   }
-  std::cout<<'\n';
+  out<<'\n';
 }
 
 void load_from_file(simulation& s, std::string filename) {
@@ -194,6 +194,11 @@ int main(int argc, char* argv[]) {
   size_t nbstep = std::atol(argv[3]);
   size_t printevery = std::atol(argv[4]);
   size_t nbthreads = std::atol(argv[5]);
+
+  //create output file
+  std::ofstream output_file;
+  output_file.open("./output.tsv", std::ios::out);
+  if(!output_file.is_open()) { throw std::runtime_error("Output file did not open properly"); }
   
   
   simulation s(1);
@@ -223,7 +228,7 @@ int main(int argc, char* argv[]) {
   
   for (size_t step = 0; step< nbstep; step++) {
     if (step %printevery == 0)
-      dump_state(s);
+      dump_state(s, output_file);
   
     reset_force(s);
     //calculate all particle forces
@@ -239,7 +244,8 @@ int main(int argc, char* argv[]) {
     });
   }
   
-  dump_state(s);  
+  dump_state(s, output_file);
+  output_file.close();  
 
   //end timer
   const auto finish{std::chrono::steady_clock::now()};

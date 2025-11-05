@@ -219,8 +219,8 @@ int main(int argc, char* argv[]) {
     reset_force(s);
     for (size_t i=0; i<s.nbpart; ++i)
       for (size_t j=0; j<s.nbpart; ++j)
-        if (i != j)
-          update_force(s, i, j);
+	if (i != j)
+	  update_force(s, i, j);
 
     for (size_t i=0; i<s.nbpart; ++i) {
       apply_force(s, i, dt);
@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
     }
   }
   
-  dump_state(s);  
+  //dump_state(s);  
 
 
   return 0;

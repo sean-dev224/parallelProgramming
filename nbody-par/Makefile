@@ -1,4 +1,4 @@
-CXXFLAGS=-O3 -fopenmp
+CXXFLAGS=-O3
 LDFLAGS= -fopenmp
 
 nbody-par: nbody-par.cpp

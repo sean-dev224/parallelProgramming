@@ -13,7 +13,28 @@ To benchmark on Centaurus
 4. The execution time will be listed at the bottom of the .out file that is generated after execution
 
 
+Solar System dt = 200, nbstep = 5000000
+1 Threads, Time to run: 45.2438s
+2 Threads, Time to run: 101.799s
+4 Threads, Time to run: 127.451s
+8 Threads, Time to run: 196.599s
 
+100 Particles dt = 1, nbstep = 10000
+1 Threads, Time to run: 1.6476s
+2 Threads, Time to run: 2.61277s
+4 Threads, Time to run: 6.20452s
+8 Threads, Time to run: 8.1132s
+
+
+1000 Particles dt = 1, nbstep = 10000
+2 Threads, Time to run: 105.742s
+4 Threads, Time to run: 136.009s
+8 Threads, Time to run: 152.599s
+
+Clearly, I have an issue with my implementation of the assignment. My performance gets consistently worse as the number of threads increases,
+which is not what is supposed to happen. I have tried adjusting the level of granularity and reworking my parallel code, but I was never able
+to get a meaningful speedup. My main theory is that this is due to context switching overhead, but I would still expect to see some improvement
+different granularity levels. Feedback on what I'm doing wrong here would be much appreciated.
 
 
 

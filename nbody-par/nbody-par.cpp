@@ -221,7 +221,7 @@ int main(int argc, char* argv[]) {
 
   OmpLoop parfor;
   parfor.setNbThread(nbthreads);
-  parfor.setGranularity(100);
+  parfor.setGranularity(1000);
 
   //start timer
   const auto start{std::chrono::steady_clock::now()};

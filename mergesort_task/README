@@ -8,3 +8,28 @@ To benchmark on Centaurus
 
 4. The execution time will be listed at the bottom of the .out file that is generated after execution
 
+Small: N=1,000,000
+1 Threads, Execution Time: 0.00804653s
+2 Threads, Execution Time: 0.00490085s
+4 Threads, Execution Time: 0.00382368s
+8 Threads, Execution Time: 0.00338632s
+16 Threads, Execution Time: 0.0028636s
+32 Threads, Execution Time: 0.0029952s
+
+Medium: N=100,000,000
+1 Threads, Execution Time: 12.3806s
+2 Threads, Execution Time: 6.56592s
+4 Threads, Execution Time: 5.41877s
+8 Threads, Execution Time: 3.6304s
+16 Threads, Execution Time: 2.30239s
+32 Threads, Execution Time: 1.71247s
+
+Large, N=10,000,000,000
+1 Threads, Execution Time: 1552.43s
+2 Threads, Execution Time: 814.651s
+4 Threads, Execution Time: 658.652s
+8 Threads, Execution Time: 426.957s
+16 Threads, Execution Time: 263.613s
+32 Threads, Execution Time: 188.129s
+
+

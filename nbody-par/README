@@ -35,6 +35,3 @@ Clearly, I have an issue with my implementation of the assignment. My performanc
 which is not what is supposed to happen. I have tried adjusting the level of granularity and reworking my parallel code, but I was never able
 to get a meaningful speedup. My main theory is that this is due to context switching overhead, but I would still expect to see some improvement
 different granularity levels. Feedback on what I'm doing wrong here would be much appreciated.
-
-
-

@@ -1,0 +1,10 @@
+To benchmark on Centaurus
+1. Pull Git repository
+2. run "make" in the "mergesort_task" directory to compile the code
+3. run the batch script to execute the code through slurm. Use the following rules:
+
+    Use the following arguments to run on command line:
+    sbatch batch_script.sh <n> <nbthreads> 
+
+4. The execution time will be listed at the bottom of the .out file that is generated after execution
+

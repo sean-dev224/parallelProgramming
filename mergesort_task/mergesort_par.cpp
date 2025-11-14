@@ -165,7 +165,7 @@ int main (int argc, char* argv[]) {
   std::chrono::duration<double> elpased_seconds = end-start;
 
   // display time to cerr
-  std::cerr<<"Execution Time: "<<elpased_seconds.count()<<"s"<<std::endl;
+  std::cerr<<nbthreads<<" Threads, N="<<n<<" Execution Time: "<<elpased_seconds.count()<<"s"<<std::endl;
   checkMergeSortResult (arr, n);
 
 #if DEBUG
